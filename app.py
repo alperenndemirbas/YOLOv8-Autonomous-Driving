@@ -41,7 +41,7 @@ def load_model():
         bounding_box_format="xyxy",
         from_logits=False, # Ensure probabilities are not re-scaled
         iou_threshold=0.5, 
-        confidence_threshold=0.3,
+        confidence_threshold=0.2,
     )
     
     return model
