@@ -34,19 +34,21 @@ def load_model():
         }
     )
     
-    # --- KRİTİK DÜZELTME: COLAB AYARLARI ---
-    # Colab'deki temiz görüntü için standart ayarlara dönüyoruz.
+    # --- FİNAL DÜZELTME: HAYALET KUTULARI YOK ETME ---
     model.prediction_decoder = keras_cv.layers.NonMaxSuppression(
         bounding_box_format="xyxy",
-        from_logits=True,
-        # IoU: 0.5 Standarttır. Kutuların ne kadar çakışabileceğini belirler.
+        
+        # BURASI ÇOK ÖNEMLİ! True idi, False yaptık.
+        # False yapınca "0 puanı 50 puana çevirme" hatası düzeliyor.
+        from_logits=False,
+        
+        # Artık puanlar doğru geleceği için eşikleri normale çekebiliriz
         iou_threshold=0.5, 
-        # Confidence: 0.25 Colab kodundaki değerdir.
-        confidence_threshold=0.25,
+        confidence_threshold=0.4,
     )
     
     return model
-
+    
 # --- PREDICTION LOGIC ---
 def predict_frame(model, frame):
     input_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
