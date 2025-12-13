@@ -36,6 +36,18 @@ def load_model():
             "YOLOV8Backbone": keras_cv.models.YOLOV8Backbone
         }
     )
+    
+    # --- KRİTİK YAMA BAŞLANGICI ---
+    # Sürüm uyuşmazlığı nedeniyle bozulan Decoder'ı (Kutu Çiziciyi) 
+    # manuel olarak yeniden tanımlıyoruz.
+    model.prediction_decoder = keras_cv.layers.NonMaxSuppression(
+        bounding_box_format="xyxy",
+        from_logits=True,
+        iou_threshold=0.5,
+        confidence_threshold=0.4,
+    )
+    # --- KRİTİK YAMA BİTİŞİ ---
+    
     return model
 
 # --- PREDICTION LOGIC ---
