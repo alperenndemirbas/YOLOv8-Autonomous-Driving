@@ -1,0 +1,8 @@
+tensorflow==2.15.0
+keras==2.15.0
+keras-cv==0.8.2
+opencv-python
+matplotlib
+seaborn
+pandas
+numpy
