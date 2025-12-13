@@ -8,23 +8,25 @@ import os
 import gdown
 
 # --- CONFIGURATION ---
-# Replace this with your Google Drive File ID
+# Google Drive File ID for the pre-trained model
 MODEL_DRIVE_ID = '1JZ0OmNuOIK8l4xxo5KoThcNpykMzsCtq'
 MODEL_FILENAME = 'yolov8_model_manuel_kayit.keras'
 
-# Visual Settings
+# Visualization Settings
 CLASS_MAPPING = {0: 'Car', 1: 'Truck', 2: 'Pedestrian', 3: 'Cyclist', 4: 'Traffic Light'}
 COLORS = [(0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
 IMAGE_SIZE = (640, 640)
 
-# --- CACHING THE MODEL LOAD ---
+# --- MODEL LOADING ---
 @st.cache_resource
 def load_model():
+    # Download model from Drive if it doesn't exist locally
     if not os.path.exists(MODEL_FILENAME):
         url = f'https://drive.google.com/uc?id={MODEL_DRIVE_ID}'
         st.info("Downloading model from Drive... This might take a minute.")
         gdown.download(url, MODEL_FILENAME, quiet=False)
     
+    # Load the Keras model with custom objects
     model = tf.keras.models.load_model(
         MODEL_FILENAME,
         compile=False,
@@ -34,23 +36,19 @@ def load_model():
         }
     )
     
-    # --- FİNAL DÜZELTME: HAYALET KUTULARI YOK ETME ---
+    # Configure NonMaxSuppression decoder for inference
     model.prediction_decoder = keras_cv.layers.NonMaxSuppression(
         bounding_box_format="xyxy",
-        
-        # BURASI ÇOK ÖNEMLİ! True idi, False yaptık.
-        # False yapınca "0 puanı 50 puana çevirme" hatası düzeliyor.
-        from_logits=False,
-        
-        # Artık puanlar doğru geleceği için eşikleri normale çekebiliriz
+        from_logits=False, # Ensure probabilities are not re-scaled
         iou_threshold=0.5, 
-        confidence_threshold=0.4,
+        confidence_threshold=0.3,
     )
     
     return model
-    
-# --- PREDICTION LOGIC ---
+
+# --- INFERENCE UTILS ---
 def predict_frame(model, frame):
+    # Preprocess frame: Resize, Pad, and Convert to Tensor
     input_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     input_frame = tf.image.resize_with_pad(input_frame, IMAGE_SIZE[0], IMAGE_SIZE[1])
     input_frame = tf.cast(input_frame, tf.float32)
@@ -60,10 +58,12 @@ def predict_frame(model, frame):
     return predictions
 
 def draw_boxes(frame, predictions, width, height):
+    # Extract predictions
     boxes = predictions['boxes'][0]
     classes = predictions['classes'][0]
     confidence = predictions['confidence'][0]
 
+    # Calculate scaling factors to map back to original resolution
     ratio_x = IMAGE_SIZE[0] / width
     ratio_y = IMAGE_SIZE[1] / height
     scale = min(ratio_x, ratio_y)
@@ -73,10 +73,10 @@ def draw_boxes(frame, predictions, width, height):
     valid_indices = np.where(classes != -1)[0]
     
     for i in valid_indices:
-        # Decoder zaten 0.25 altını elediği için burada ekstra filtreye gerek yok
         box = boxes[i]
         score = float(confidence[i])
         
+        # Rescale coordinates
         x1 = int((box[0] - offset_x) / scale)
         y1 = int((box[1] - offset_y) / scale)
         x2 = int((box[2] - offset_x) / scale)
@@ -86,15 +86,17 @@ def draw_boxes(frame, predictions, width, height):
         label = f"{CLASS_MAPPING.get(class_id, 'Unknown')} {score:.2f}"
         color = COLORS[class_id % len(COLORS)]
 
+        # Draw rectangle and label
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
         cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
     
     return frame
 
-# --- MAIN APP INTERFACE ---
+# --- STREAMLIT APP ---
 st.title("🚗 Autonomous Driving Object Detection")
 st.write("Upload a video or image to detect cars, trucks, and pedestrians.")
 
+# Load Model
 try:
     model = load_model()
     st.success("Model loaded successfully!")
@@ -102,9 +104,11 @@ except Exception as e:
     st.error(f"Error loading model: {e}")
     st.stop()
 
+# File Uploader
 uploaded_file = st.file_uploader("Choose a file...", type=["mp4", "jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
+    # Handle Image Upload
     if uploaded_file.name.endswith(('.jpg', '.jpeg', '.png')):
         file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
         frame = cv2.imdecode(file_bytes, 1)
@@ -115,13 +119,13 @@ if uploaded_file is not None:
         
         st.image(result_frame, channels="BGR", caption="Processed Image")
 
+    # Handle Video Upload
     elif uploaded_file.name.endswith('.mp4'):
         tfile = tempfile.NamedTemporaryFile(delete=False) 
         tfile.write(uploaded_file.read())
         
         vf = cv2.VideoCapture(tfile.name)
         stframe = st.empty()
-        
         frame_count = 0
         
         while vf.isOpened():
@@ -131,8 +135,8 @@ if uploaded_file is not None:
             
             frame_count += 1
             
-            # Performans için kare atlama (3 karede 1 işle)
-            if frame_count % 3 != 0:
+            # Frame Skipping for Performance (Process every 5th frame)
+            if frame_count % 5 != 0:
                 continue
             
             preds = predict_frame(model, frame)
