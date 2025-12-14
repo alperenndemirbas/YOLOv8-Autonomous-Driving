@@ -1,10 +1,6 @@
-tensorflow-cpu
-keras
-keras-cv
-opencv-python-headless
-matplotlib
-seaborn
-pandas
-numpy
 streamlit
-gdown
+opencv-python
+numpy
+tensorflow==2.16.1
+keras==3.3.3
+keras-cv==0.9.0

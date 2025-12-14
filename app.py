@@ -2,73 +2,117 @@ import streamlit as st
 import cv2
 import numpy as np
 import tensorflow as tf
+import keras
 import keras_cv
 import tempfile
 import os
-import gdown
 
 # --- CONFIGURATION ---
-# Google Drive File ID for the pre-trained model
-MODEL_DRIVE_ID = '1JZ0OmNuOIK8l4xxo5KoThcNpykMzsCtq'
-MODEL_FILENAME = 'yolov8_model_manuel_kayit.keras'
-
-# Visualization Settings
+MODEL_PATH = 'models/yolov8_model_manuel_kayit.keras'
+TARGET_SIZE = (640, 640)  # Model input size
+# Class mapping for the autonomous driving dataset
 CLASS_MAPPING = {0: 'Car', 1: 'Truck', 2: 'Pedestrian', 3: 'Cyclist', 4: 'Traffic Light'}
+# Bounding box colors for visualization
 COLORS = [(0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
-IMAGE_SIZE = (640, 640)
 
 # --- MODEL LOADING ---
 @st.cache_resource
 def load_model():
-    # Download model from Drive if it doesn't exist locally
-    if not os.path.exists(MODEL_FILENAME):
-        url = f'https://drive.google.com/uc?id={MODEL_DRIVE_ID}'
-        st.info("Downloading model from Drive... This might take a minute.")
-        gdown.download(url, MODEL_FILENAME, quiet=False)
+    """
+    Loads the trained YOLOv8 model with Keras 3 compatibility.
+    Configures the NonMaxSuppression decoder for inference.
+    """
+    if not os.path.exists(MODEL_PATH):
+        st.error(f"Model file not found: {MODEL_PATH}")
+        st.stop()
     
-    # Load the Keras model with custom objects
-    model = tf.keras.models.load_model(
-        MODEL_FILENAME,
-        compile=False,
-        custom_objects={
-            "YOLOV8Detector": keras_cv.models.YOLOV8Detector,
-            "YOLOV8Backbone": keras_cv.models.YOLOV8Backbone
-        }
-    )
-    
-    # Configure NonMaxSuppression decoder for inference
-    model.prediction_decoder = keras_cv.layers.NonMaxSuppression(
-        bounding_box_format="xyxy",
-        from_logits=False, # Ensure probabilities are not re-scaled
-        iou_threshold=0.5, 
-        confidence_threshold=0.2,
-    )
-    
-    return model
+    try:
+        # Load model without compiling (optimizer state not needed for inference)
+        model = keras.models.load_model(MODEL_PATH, compile=False)
+        
+        # Configure the prediction decoder
+        model.prediction_decoder = keras_cv.layers.NonMaxSuppression(
+            bounding_box_format="xyxy",
+            from_logits=False,
+            iou_threshold=0.5,
+            confidence_threshold=0.25,
+        )
+        return model
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        st.stop()
 
-# --- INFERENCE UTILS ---
+# --- PREPROCESSING (LETTERBOX RESIZING) ---
+def preprocess_image(image, target_size):
+    """
+    Resizes the image to target_size while maintaining aspect ratio (Letterbox).
+    Adds padding (gray borders) to fit the square shape without distortion.
+    
+    Returns:
+        padded_image: The processed image ready for the model.
+        meta: Dictionary containing scaling factor and padding values for post-processing.
+    """
+    h, w = image.shape[:2]
+    scale = min(target_size[0] / w, target_size[1] / h)
+    
+    # Calculate new dimensions preserving aspect ratio
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+    
+    resized_image = cv2.resize(image, (new_w, new_h))
+    
+    # Calculate padding needed to reach target_size
+    delta_w = target_size[0] - new_w
+    delta_h = target_size[1] - new_h
+    top, bottom = delta_h // 2, delta_h - (delta_h // 2)
+    left, right = delta_w // 2, delta_w - (delta_w // 2)
+    
+    # Add border (padding) with YOLO standard gray color
+    padded_image = cv2.copyMakeBorder(
+        resized_image, top, bottom, left, right, 
+        cv2.BORDER_CONSTANT, value=(114, 114, 114)
+    )
+    
+    # Store metadata to map boxes back to original coordinates later
+    meta = {
+        'scale': scale,
+        'pad_top': top,
+        'pad_left': left,
+        'original_dim': (h, w)
+    }
+    
+    return padded_image, meta
+
+# --- INFERENCE ---
 def predict_frame(model, frame):
-    # Preprocess frame: Resize, Pad, and Convert to Tensor
-    input_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    input_frame = tf.image.resize_with_pad(input_frame, IMAGE_SIZE[0], IMAGE_SIZE[1])
-    input_frame = tf.cast(input_frame, tf.float32)
-    input_frame = tf.expand_dims(input_frame, axis=0)
-
+    """
+    Runs prediction on a single frame.
+    """
+    # 1. Letterbox Preprocessing
+    processed_frame, meta = preprocess_image(frame, TARGET_SIZE)
+    
+    # 2. Convert to RGB and add batch dimension
+    input_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+    input_frame = np.expand_dims(input_frame, axis=0) # Shape: (1, 640, 640, 3)
+    
+    # 3. Predict
     predictions = model.predict(input_frame, verbose=0)
-    return predictions
+    return predictions, meta
 
-def draw_boxes(frame, predictions, width, height):
-    # Extract predictions
+# --- VISUALIZATION ---
+def draw_boxes(frame, predictions, meta):
+    """
+    Draws bounding boxes and labels on the original frame.
+    Uses 'meta' to reverse the resizing/padding logic.
+    """
     boxes = predictions['boxes'][0]
     classes = predictions['classes'][0]
     confidence = predictions['confidence'][0]
-
-    # Calculate scaling factors to map back to original resolution
-    ratio_x = IMAGE_SIZE[0] / width
-    ratio_y = IMAGE_SIZE[1] / height
-    scale = min(ratio_x, ratio_y)
-    offset_x = (IMAGE_SIZE[0] - width * scale) / 2
-    offset_y = (IMAGE_SIZE[1] - height * scale) / 2
+    
+    # Retrieve preprocessing metadata
+    scale = meta['scale']
+    pad_left = meta['pad_left']
+    pad_top = meta['pad_top']
 
     valid_indices = np.where(classes != -1)[0]
     
@@ -76,73 +120,79 @@ def draw_boxes(frame, predictions, width, height):
         box = boxes[i]
         score = float(confidence[i])
         
-        # Rescale coordinates
-        x1 = int((box[0] - offset_x) / scale)
-        y1 = int((box[1] - offset_y) / scale)
-        x2 = int((box[2] - offset_x) / scale)
-        y2 = int((box[3] - offset_y) / scale)
+        # --- COORDINATE MAPPING ---
+        # 1. Subtract padding
+        # 2. Divide by scale to restore original resolution
+        x1 = int((box[0] - pad_left) / scale)
+        y1 = int((box[1] - pad_top) / scale)
+        x2 = int((box[2] - pad_left) / scale)
+        y2 = int((box[3] - pad_top) / scale)
 
+        # Get class info
         class_id = int(classes[i])
-        label = f"{CLASS_MAPPING.get(class_id, 'Unknown')} {score:.2f}"
+        label_text = CLASS_MAPPING.get(class_id, 'Unknown')
+        label = f"{label_text} {score:.2f}"
         color = COLORS[class_id % len(COLORS)]
 
-        # Draw rectangle and label
+        # Draw box
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
-        cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+        
+        # Draw label background and text
+        (w, h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+        cv2.rectangle(frame, (x1, y1 - 20), (x1 + w, y1), color, -1)
+        cv2.putText(frame, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
     
     return frame
 
-# --- STREAMLIT APP ---
+# --- MAIN STREAMLIT APP ---
+st.set_page_config(page_title="Autonomous Driving Detection", page_icon="🚗")
 st.title("🚗 Autonomous Driving Object Detection")
-st.write("Upload a video or image to detect cars, trucks, and pedestrians.")
+st.caption("Model Loading")
 
-# Load Model
-try:
-    model = load_model()
-    st.success("Model loaded successfully!")
-except Exception as e:
-    st.error(f"Error loading model: {e}")
-    st.stop()
+# Load the model
+model = load_model()
+if model:
+    st.success("Model Loaded Successfully!")
 
 # File Uploader
-uploaded_file = st.file_uploader("Choose a file...", type=["mp4", "jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Upload a Video or Image", type=["mp4", "jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Handle Image Upload
+    # --- IMAGE PROCESSING ---
     if uploaded_file.name.endswith(('.jpg', '.jpeg', '.png')):
         file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
         frame = cv2.imdecode(file_bytes, 1)
         
-        preds = predict_frame(model, frame)
-        h, w, _ = frame.shape
-        result_frame = draw_boxes(frame, preds, w, h)
+        # Run inference
+        preds, meta = predict_frame(model, frame)
         
-        st.image(result_frame, channels="BGR", caption="Processed Image")
+        # Draw results
+        result_frame = draw_boxes(frame, preds, meta)
+        
+        # Display result
+        st.image(result_frame, channels="BGR", caption="Processed Image", use_container_width=True)
 
-    # Handle Video Upload
+    # --- VIDEO PROCESSING ---
     elif uploaded_file.name.endswith('.mp4'):
+        # Save uploaded video to a temp file
         tfile = tempfile.NamedTemporaryFile(delete=False) 
         tfile.write(uploaded_file.read())
         
         vf = cv2.VideoCapture(tfile.name)
         stframe = st.empty()
-        frame_count = 0
         
         while vf.isOpened():
             ret, frame = vf.read()
             if not ret:
                 break
             
-            frame_count += 1
+            # Run inference
+            preds, meta = predict_frame(model, frame)
             
-            # Frame Skipping for Performance (Process every 5th frame)
-            if frame_count % 5 != 0:
-                continue
+            # Draw results
+            result_frame = draw_boxes(frame, preds, meta)
             
-            preds = predict_frame(model, frame)
-            h, w, _ = frame.shape
-            result_frame = draw_boxes(frame, preds, w, h)
-            
-            stframe.image(result_frame, channels="BGR")
+            # Display video frame
+            stframe.image(result_frame, channels="BGR", use_container_width=True)
             
         vf.release()
