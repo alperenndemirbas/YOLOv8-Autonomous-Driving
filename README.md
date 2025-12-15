@@ -58,28 +58,22 @@ Computer Vision: OpenCV (with Letterbox Resizing for aspect-ratio preservation)
 Follow these steps to set up and run the project on your local machine.
 
 1. Clone the Repository
-Bash
-
+```bash
 git clone https://github.com/alperenndemirbas/YOLOv8-Autonomous-Driving
 cd YOLOv8-Autonomous-Driving
+```
 2. Environment Setup (Recommended)
 This project requires specific package versions. It is highly recommended to use Miniconda to create an isolated environment.
-
-Bash
-
-# Create a new environment with Python 3.10
+```bash
 conda create -n yolo_env python=3.10 -y
-
-# Activate the environment
 conda activate yolo_env
+```
 3. Install Dependencies
-Bash
-
+```bash
 pip install -r requirements.txt
-4. Setup the Model
-
+```
+5. Setup the Model
 👉 **[Download YOLOv8 Final Model (.keras)](https://drive.google.com/file/d/1JZ0OmNuOIK8l4xxo5KoThcNpykMzsCtq/view?usp=sharing)**
-
 
 Create a folder named models in the root directory.
 
@@ -87,8 +81,7 @@ Place the downloaded file inside. The path should look like this: models/yolov8_
 
 5. Run the Application
 Start the Streamlit web interface:
-
-Bash
-
+```bash
 streamlit run app.py
+```
 The application will open in your default web browser (usually at http://localhost:8501).
