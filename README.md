@@ -45,21 +45,50 @@ This project is developed as a **prototype** to demonstrate the capabilities of 
 1.  **Car Bias:** The model is highly accurate at detecting cars (Majority Class) but tends to misclassify Trucks and Pedestrians as "Cars". This is due to class imbalance and limited training time.
 2.  **Robustness:** Despite the short training, the pipeline successfully localizes objects and handles video inference smoothly.
 
-## 🚀 How to Run
-
-1.  Clone the repository:
-    ```bash
-    git clone [https://github.com/KULLANICI_ADIN/YOLOv8-Autonomous-Driving.git](https://github.com/KULLANICI_ADIN/YOLOv8-Autonomous-Driving.git)
-    ```
-2.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  **Option A (Fast Test):** Download the `.keras` model from the link above, upload it to your working directory, and run only the *Inference* cells in the notebook.
-4.  **Option B (Full Training):** Open the `.ipynb` notebook in Google Colab and run all cells to train the model from scratch.
-
 ## 🛠️ Tech Stack
-* Python 3.10+
-* TensorFlow 2.15
-* KerasCV
-* OpenCV
+Python: 3.10
+
+Deep Learning: TensorFlow 2.16.1, Keras 3.3.3, KerasCV 0.9.0
+
+UI Framework: Streamlit
+
+Computer Vision: OpenCV (with Letterbox Resizing for aspect-ratio preservation)
+
+## 🚀 How to Run Locally
+Follow these steps to set up and run the project on your local machine.
+
+1. Clone the Repository
+Bash
+
+git clone https://github.com/alperenndemirbas/YOLOv8-Autonomous-Driving
+cd YOLOv8-Autonomous-Driving
+2. Environment Setup (Recommended)
+This project requires specific package versions. It is highly recommended to use Miniconda to create an isolated environment.
+
+Bash
+
+# Create a new environment with Python 3.10
+conda create -n yolo_env python=3.10 -y
+
+# Activate the environment
+conda activate yolo_env
+3. Install Dependencies
+Bash
+
+pip install -r requirements.txt
+4. Setup the Model
+
+👉 **[Download YOLOv8 Final Model (.keras)](https://drive.google.com/file/d/1JZ0OmNuOIK8l4xxo5KoThcNpykMzsCtq/view?usp=sharing)**
+
+
+Create a folder named models in the root directory.
+
+Place the downloaded file inside. The path should look like this: models/yolov8_model_manuel_kayit.keras
+
+5. Run the Application
+Start the Streamlit web interface:
+
+Bash
+
+streamlit run app.py
+The application will open in your default web browser (usually at http://localhost:8501).
