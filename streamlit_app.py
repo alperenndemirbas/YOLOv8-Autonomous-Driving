@@ -1,89 +1,74 @@
 import streamlit as st
-import cv2
+import requests
+from PIL import Image
+import io
 import numpy as np
-import tempfile
-
-# --- LOCAL MODULE IMPORTS ---
-# Importing logic from our clean architecture structure
-from app.inference import YoloModel
-from app.utils import preprocess_image, draw_boxes
+from app.utils import draw_boxes  # Local utility for visualization
 
 # --- CONFIGURATION ---
-MODEL_PATH = 'models/yolov8_model_manuel_kayit.keras'
+# The endpoint of the local FastAPI server
+API_URL = "http://127.0.0.1:8000/predict"
 
-# --- MODEL INITIALIZATION ---
-@st.cache_resource
-def get_model():
-    """
-    Initializes and caches the YoloModel instance.
-    This prevents reloading the model on every UI interaction.
-    """
-    try:
-        return YoloModel(MODEL_PATH)
-    except Exception as e:
-        st.error(f"Failed to load model: {e}")
-        return None
+# --- UI SETUP ---
+st.set_page_config(page_title="Autonomous Driving Client", page_icon="🚗")
+st.title("🚗 Autonomous Driving - API Client")
 
-# --- STREAMLIT UI SETUP ---
-st.set_page_config(page_title="Autonomous Driving Detection", page_icon="🚗")
-st.title("🚗 Autonomous Driving Object Detection")
-st.caption("Powered by KerasCV & YOLOv8 | Modular Architecture")
+# File Uploader
+uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
 
-# Load model once
-model_wrapper = get_model()
+if uploaded_file is not None:
+    # 1. Display Original Image
+    image_bytes = uploaded_file.getvalue()
+    image = Image.open(io.BytesIO(image_bytes))
+    st.image(image, caption="Uploaded Image", use_container_width=True)
 
-if model_wrapper:
-    st.success("System Ready")
+    # 2. Button to Trigger Prediction
+    if st.button("Analyze Image (Send to API) 🚀"):
+        
+        # --- PREPARE PAYLOAD ---
+        # Format the file for the multipart/form-data request
+        files = {
+            "file": (
+                uploaded_file.name,    # Filename
+                image_bytes,           # File content (bytes)
+                uploaded_file.type     # Content type (e.g., image/jpeg)
+            )
+        }
 
-    # File Uploader
-    uploaded_file = st.file_uploader("Upload a Video or Image", type=["mp4", "jpg", "jpeg", "png"])
-
-    if uploaded_file is not None:
-        # --- IMAGE PROCESSING PIPELINE ---
-        if uploaded_file.name.endswith(('.jpg', '.jpeg', '.png')):
-            # Read image
-            file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-            frame = cv2.imdecode(file_bytes, 1)
-            
-            # 1. Preprocess (Letterbox Resize)
-            processed_frame, meta = preprocess_image(frame)
-            
-            # 2. Prepare Input Tensor (Add batch dimension)
-            input_tensor = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-            input_tensor = np.expand_dims(input_tensor, axis=0)
-            
-            # 3. Inference
-            preds = model_wrapper.predict(input_tensor)
-            
-            # 4. Visualization (Draw Boxes)
-            result_frame = draw_boxes(frame, preds, meta)
-            
-            # Display
-            st.image(result_frame, channels="BGR", use_container_width=True, caption="Detected Objects")
-
-        # --- VIDEO PROCESSING PIPELINE ---
-        elif uploaded_file.name.endswith('.mp4'):
-            # Save temp file for OpenCV to read
-            tfile = tempfile.NamedTemporaryFile(delete=False) 
-            tfile.write(uploaded_file.read())
-            
-            vf = cv2.VideoCapture(tfile.name)
-            stframe = st.empty()
-            
-            while vf.isOpened():
-                ret, frame = vf.read()
-                if not ret: break
+        # Show spinner while waiting for response
+        with st.spinner("Connecting to API... Processing image..."):
+            try:
+                # --- SEND REQUEST ---
+                # Send the POST request to the FastAPI backend
+                response = requests.post(API_URL, files=files)
                 
-                # Pipeline: Preprocess -> Predict -> Draw
-                processed_frame, meta = preprocess_image(frame)
-                
-                input_tensor = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-                input_tensor = np.expand_dims(input_tensor, axis=0)
-                
-                preds = model_wrapper.predict(input_tensor)
-                result_frame = draw_boxes(frame, preds, meta)
-                
-                # Update video frame
-                stframe.image(result_frame, channels="BGR", use_container_width=True)
-                
-            vf.release()
+                # --- HANDLE RESPONSE ---
+                if response.status_code == 200:
+                    # Success: Parse JSON response
+                    result = response.json()
+                    
+                    st.success(f"Success! Detected {len(result['detections'])} objects.")
+                    
+                    # --- VISUALIZATION ---
+                    # Convert PIL image to NumPy array for drawing
+                    image_np = np.array(image)
+                    
+                    # Draw bounding boxes using the received coordinates
+                    # Note: utils.draw_boxes now handles the updated JSON format
+                    final_image = draw_boxes(image_np, result['detections'])
+                    
+                    # Display the processed image
+                    st.image(final_image, caption="AI Detection Result", use_container_width=True)
+                    
+                    # Show raw JSON data for debugging/inspection
+                    with st.expander("View Technical Details (JSON)"):
+                        st.json(result)
+                else:
+                    # Handle API errors (e.g., 400, 422, 500)
+                    st.error(f"API Error! Status Code: {response.status_code}")
+                    st.error(response.text)
+
+            except requests.exceptions.ConnectionError:
+                # Handle connection failures (e.g., server not running)
+                st.error("🚨 Connection Error: Could not reach the API.")
+                st.info("Please ensure the FastAPI server is running: 'uvicorn api:app --reload'")
