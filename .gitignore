@@ -1,6 +1,42 @@
-*.keras
-*.pt
-Miniconda3-latest-Linux-x86_64.sh
+# --- Python Internals ---
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Virtual Environments ---
+# Folders containing library installations
 venv/
+env/
 .env
+.venv/
+
+# --- Operating System Files ---
+.DS_Store
+Thumbs.db
+
+# --- IDE Settings ---
+# VS Code project settings (hidden folder)
+.vscode/
+.idea/
+
+# --- Streamlit ---
+# Local configuration and secrets
+.streamlit/
+
+# --- Large Model Files ---
+# IMPORTANT: Excluding large model files to avoid GitHub 100MB limit.
+# You already have the download link in README.
+models/*.keras
+models/*.pt
+*.h5
+
+# --- Installers & Binary Files ---
+# Excluding the Miniconda installer seen in your project folder
+Miniconda3*
+*.exe
+*.sh
+
+# --- Jupyter Notebook Checkpoints ---
+.ipynb_checkpoints

@@ -1,87 +1,106 @@
-# 🚗 YOLOv8 Autonomous Driving Object Detection
+🚗 YOLOv8 Autonomous Driving Object Detection System
+This project is an end-to-end AI Microservice Application designed to detect objects in autonomous driving scenarios. It features a modern, decoupled architecture with a FastAPI backend serving a custom-trained YOLOv8 model and a Streamlit frontend for interactive user testing.
 
-This project implements a real-time object detection system for autonomous driving using **KerasCV** and **YOLOv8**. It detects cars, trucks, pedestrians, cyclists, and traffic lights from video feeds.
+📋 Overview
+Model: YOLOv8 (Medium Backbone pre-trained on COCO, fine-tuned on Self-Driving Cars dataset).
 
-![Inference Example](inference_example.png)
-*(Sample output from the model showing detected vehicles)*
+Architecture: Microservice pattern (Client-Server).
 
-## 📋 Overview
+Backend: FastAPI handles image processing and model inference.
 
-* **Model:** YOLOv8 (Medium Backbone pre-trained on COCO).
-* **Framework:** TensorFlow / KerasCV.
-* **Input:** 1920x1080 Dashcam Videos.
-* **Preprocessing:** Resizing with padding (letterboxing) to maintain aspect ratio.
+Frontend: Streamlit handles user input and visualization.
 
-## 📥 Pre-trained Model
+Input: Supports Images and Video feeds (1920x1080 Dashcam).
 
-Since the trained model file exceeds GitHub's size limit, it is hosted on Google Drive. You can download it to skip the training process and test the inference immediately.
+Preprocessing: Letterbox resizing with padding to maintain aspect ratio without distortion.
 
-👉 **[Download YOLOv8 Final Model (.keras)](https://drive.google.com/file/d/1JZ0OmNuOIK8l4xxo5KoThcNpykMzsCtq/view?usp=sharing)**
+🏗 Project Structure
+Plaintext
 
-## 📂 Dataset
+yolo-project/
+│
+├── app/                  # Core modules
+│   ├── inference.py      # Model loading & prediction logic
+│   └── utils.py          # Image preprocessing & visualization tools
+│
+├── models/               # Trained AI Models
+│   └── yolov8_model_manuel_kayit.keras
+│
+├── api.py                # FastAPI Server (The "Kitchen")
+├── streamlit_app.py      # Streamlit Client (The "Waiter")
+├── requirements.txt      # Project dependencies
+└── README.md             # Documentation
+📥 Pre-trained Model
+Since the trained model file exceeds GitHub's size limit, it is hosted on Google Drive. You must download it to run the project.
 
-The model is trained on the **Self Driving Cars** dataset sourced from Kaggle.
-* **Source:** [Kaggle - Self Driving Cars Dataset](https://www.kaggle.com/datasets/alincijov/self-driving-cars)
-* **Classes:** `Car`, `Truck`, `Pedestrian`, `Bicyclist`, `Traffic Light`.
-* **Note:** The notebook is configured to automatically download this dataset using the Kaggle API.
+👉 Download YOLOv8 Final Model (.keras)
 
-## 📊 Performance & Analysis
+Place the downloaded file inside the models/ directory.
 
-### ⚠️ Project Status: Prototype / Proof of Concept
-This project is developed as a **prototype** to demonstrate the capabilities of YOLOv8 on autonomous driving tasks. Due to computational constraints, the model was trained for **10 epochs** on a subset of the dataset.
+📂 Dataset
+The model is trained on the Self Driving Cars dataset sourced from Kaggle.
 
-### ✅ Strengths:
-* **Near Detection:** The model performs excellently on identifying vehicles and pedestrians within a close range (0-30 meters).
-* **Real-time Inference:** The inference pipeline is optimized for speed, suitable for real-time video processing.
+Source: Kaggle - Self Driving Cars Dataset
 
-### 🚧 Current Limitations & Areas for Improvement:
-* **Distant Objects:** Accuracy drops for small objects appearing far in the horizon.
-* **Class Imbalance:** As seen in the confusion matrix below, the model has a bias towards the "Car" class due to dataset imbalance.
-* **Environmental Conditions:** The model is currently optimized for daylight conditions. Further training is required for night driving or rainy weather performance.
+Classes: Car, Truck, Pedestrian, Bicyclist, Traffic Light.
 
-![Confusion Matrix](confusion_matrix.png)
+📊 Performance & Analysis
+⚠️ Project Status: Prototype
+This project serves as a Proof of Concept to demonstrate the integration of YOLOv8 with a modern web stack. The model was trained for 10 epochs due to computational constraints.
 
-### Key Observations:
-1.  **Car Bias:** The model is highly accurate at detecting cars (Majority Class) but tends to misclassify Trucks and Pedestrians as "Cars". This is due to class imbalance and limited training time.
-2.  **Robustness:** Despite the short training, the pipeline successfully localizes objects and handles video inference smoothly.
+✅ Strengths:
+Near Detection: Excellent performance on identifying vehicles and pedestrians within a close range (0-30 meters).
 
-## 🛠️ Tech Stack
-Python: 3.10
+Production Architecture: The project uses a scalable API-based approach rather than a monolithic script.
 
+🚧 Limitations:
+Class Imbalance: As seen in the confusion matrix, the model has a bias towards the "Car" class.
+
+Environmental Conditions: Optimized for daylight; performance may drop in night/rain conditions.
+
+🛠️ Tech Stack
 Deep Learning: TensorFlow 2.16.1, Keras 3.3.3, KerasCV 0.9.0
 
-UI Framework: Streamlit
+Backend: FastAPI, Uvicorn, Python-Multipart
 
-Computer Vision: OpenCV (with Letterbox Resizing for aspect-ratio preservation)
+Frontend: Streamlit, Requests
 
-## 🚀 How to Run Locally
-Follow these steps to set up and run the project on your local machine.
+Image Processing: OpenCV, Pillow, NumPy
+
+🚀 How to Run Locally
+Follow these steps to set up the Microservice architecture.
 
 1. Clone the Repository
-```bash
+Bash
+
 git clone https://github.com/alperenndemirbas/YOLOv8-Autonomous-Driving
 cd YOLOv8-Autonomous-Driving
-```
 2. Environment Setup (Recommended)
-This project requires specific package versions. It is highly recommended to use Miniconda to create an isolated environment.
-```bash
+Bash
+
 conda create -n yolo_env python=3.10 -y
 conda activate yolo_env
-```
 3. Install Dependencies
-```bash
+Bash
+
 pip install -r requirements.txt
-```
-5. Setup the Model
-👉 **[Download YOLOv8 Final Model (.keras)](https://drive.google.com/file/d/1JZ0OmNuOIK8l4xxo5KoThcNpykMzsCtq/view?usp=sharing)**
+4. Setup the Model
+Download the model from the link above and ensure your folder looks like this: models/yolov8_model_manuel_kayit.keras
 
-Create a folder named models in the root directory.
+5. Run the Backend (API)
+Open a terminal and start the API server. This loads the model into memory.
 
-Place the downloaded file inside. The path should look like this: models/yolov8_model_manuel_kayit.keras
+Bash
 
-5. Run the Application
-Start the Streamlit web interface:
-```bash
-streamlit run app.py
-```
-The application will open in your default web browser (usually at http://localhost:8501).
+uvicorn api:app --reload
+The server will start at http://127.0.0.1:8000
+
+6. Run the Frontend (UI)
+Open a second terminal and start the Streamlit interface.
+
+Bash
+
+streamlit run streamlit_app.py
+The application will open in your default browser at http://localhost:8501
+
+👤 Author: Alperen Demirbaş
