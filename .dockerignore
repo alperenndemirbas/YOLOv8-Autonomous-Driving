@@ -1,0 +1,30 @@
+# --- Git & Version Control ---
+.git
+.gitignore
+
+# --- Python Internals ---
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# --- Virtual Environments ---
+# Crucial: Do not copy local venv to container
+venv/
+env/
+.venv/
+
+# --- Large Model Files ---
+# Exclude models to keep image size small (Mount them as volumes instead)
+models/*.keras
+models/*.pt
+*.h5
+
+# --- IDE Settings ---
+.DS_Store
+.vscode
+.idea
+
+# --- Documentation & Configs ---
+Dockerfile
+README.md
