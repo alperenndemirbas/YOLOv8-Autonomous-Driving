@@ -7,10 +7,11 @@ from app.utils import draw_boxes  # Local utility for visualization
 
 # --- CONFIGURATION ---
 # The endpoint of the local FastAPI server
+# In Docker/Render, localhost usually works, but 127.0.0.1 is more explicit.
 API_URL = "http://127.0.0.1:8000/predict"
 
 # --- UI SETUP ---
-st.set_page_config(page_title="Autonomous Driving Client", page_icon="🚗")
+st.set_page_config(page_title="Autonomous Driving Client", page_icon="🚗", layout="wide")
 st.title("🚗 Autonomous Driving - API Client")
 
 # File Uploader
@@ -20,6 +21,8 @@ if uploaded_file is not None:
     # 1. Display Original Image
     image_bytes = uploaded_file.getvalue()
     image = Image.open(io.BytesIO(image_bytes))
+    
+    # Updated to fix warning: used generic width parameter for compatibility
     st.image(image, caption="Uploaded Image", use_container_width=True)
 
     # 2. Button to Trigger Prediction
@@ -36,11 +39,13 @@ if uploaded_file is not None:
         }
 
         # Show spinner while waiting for response
-        with st.spinner("Connecting to API... Processing image..."):
+        with st.spinner("Connecting to API... (Note: First run takes longer due to model download!)"):
             try:
                 # --- SEND REQUEST ---
                 # Send the POST request to the FastAPI backend
-                response = requests.post(API_URL, files=files)
+                # IMPORTANT: Added timeout=120 seconds because Render free tier is slow
+                # and model loading takes time.
+                response = requests.post(API_URL, files=files, timeout=120)
                 
                 # --- HANDLE RESPONSE ---
                 if response.status_code == 200:
@@ -71,4 +76,13 @@ if uploaded_file is not None:
             except requests.exceptions.ConnectionError:
                 # Handle connection failures (e.g., server not running)
                 st.error("🚨 Connection Error: Could not reach the API.")
-                st.info("Please ensure the FastAPI server is running: 'uvicorn api:app --reload'")
+                st.warning("⚠️ Troubleshooting for Render:")
+                st.info(
+                    "1. The server might still be downloading the model (300MB+). Wait 1-2 minutes and try again.\n"
+                    "2. Refresh the page."
+                )
+            except requests.exceptions.Timeout:
+                st.error("⏰ Request Timed Out.")
+                st.info("The server took too long to respond. The model might be loading into RAM. Please try again.")
+            except Exception as e:
+                st.error(f"An unexpected error occurred: {e}")
