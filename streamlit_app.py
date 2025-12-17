@@ -14,8 +14,6 @@ st.title("🚗 Autonomous Driving - AI Detection (Standalone)")
 
 # --- MODEL LOADING (CACHE) ---
 # Use st.cache_resource to load the model only once and keep it in memory.
-# This prevents reloading the heavy model (300MB+) on every user interaction,
-# which is crucial for preventing "Out of Memory" crashes on Render.
 @st.cache_resource
 def load_model():
     model_path = "models/yolov8_quantized.tflite"
@@ -55,21 +53,26 @@ if uploaded_file is not None:
                 input_tensor = np.expand_dims(input_tensor, axis=0)
 
                 # --- INFERENCE ---
-                # Call the model directly (no API request needed)
-                # The 'predict' method returns the dictionary from KerasCV NMS layer
                 results = model.predict(input_tensor)
 
-                # --- POST-PROCESSING ---
-                # Extract boxes, classes, and confidence scores from the dictionary
-                # Expected keys from KerasCV NMS: 'boxes', 'classes', 'confidence'
-                boxes = results['boxes'][0]
-                classes = results['classes'][0]
-                confidence = results['confidence'][0]
+                # --- POST-PROCESSING (CRITICAL FIX APPLIED HERE) ---
+                # 1. Convert to numpy arrays explicitly
+                boxes = np.array(results['boxes'][0])
+                classes = np.array(results['classes'][0])
+                confidence = np.array(results['confidence'][0])
 
-                # Filter out invalid detections (padding usually has -1 or 0 confidence)
+                # 2. FLATTEN ARRAYS (DÜZLEŞTİRME) 🔧
+                # TFLite çıktısı [[0.9]] şeklinde gelebilir, bunu [0.9] yapıyoruz.
+                # Böylece döngüde tek bir sayı elde ederiz ve hata çözülür.
+                classes = classes.flatten()
+                confidence = confidence.flatten()
+                # Boxes (N, 4) olarak kalmalı, onu düzleştirmiyoruz!
+
+                # 3. Filter out invalid detections
                 detections = []
                 for i in range(len(confidence)):
-                    if confidence[i] > 0:
+                    # Artık confidence[i] tek bir sayı olduğu için bu satır çalışır
+                    if confidence[i] > 0.25: # Eşik değeri biraz yükselttik (Gürültüyü önler)
                         detections.append({
                             "box": boxes[i], 
                             "class_id": int(classes[i]),
@@ -86,7 +89,13 @@ if uploaded_file is not None:
                 # Debug info
                 with st.expander("View Technical Details"):
                     st.write(f"Detected {len(detections)} objects.")
-                    st.write(detections)
+                    # Numpy array'leri JSON uyumlu hale getirip gösterelim
+                    st.json([str(d) for d in detections])
 
             except Exception as e:
                 st.error(f"An unexpected error occurred during inference: {e}")
+                # Hata ayıklama için boyutları göster
+                st.write("Debug info - Result shapes:")
+                if 'results' in locals():
+                    for k,v in results.items():
+                        st.write(f"{k}: {np.array(v).shape}")
