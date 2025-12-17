@@ -18,7 +18,7 @@ st.title("🚗 Autonomous Driving - AI Detection (Standalone)")
 # which is crucial for preventing "Out of Memory" crashes on Render.
 @st.cache_resource
 def load_model():
-    model_path = "models/yolov8_model_manuel_kayit.keras"
+    model_path = "models/yolov8_quantized.tflite"
     return YoloModel(model_path)
 
 # Show a spinner during the initial load (downloading + loading into RAM)
