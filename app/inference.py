@@ -2,6 +2,7 @@ import os
 import keras
 import keras_cv
 import numpy as np
+import gdown  # Dosya indirme kütüphanesi eklendi
 
 class YoloModel:
     """
@@ -15,9 +16,24 @@ class YoloModel:
         Args:
             model_path (str): Path to the .keras model file.
         """
-        # 1. Validate file existence
+        # 1. AUTO-DOWNLOAD LOGIC (For Deployment)
+        # Eğer model dosyası yerinde yoksa (Render sunucusunda olmayacak),
+        # Google Drive'dan otomatik olarak indir.
         if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Model file not found at: {model_path}")
+            print(f"⚠️ Model file not found at: {model_path}")
+            print("🌐 Downloading from Google Drive for deployment...")
+            
+            # 'models/' klasörü yoksa oluştur
+            if os.path.dirname(model_path):
+                os.makedirs(os.path.dirname(model_path), exist_ok=True)
+            
+            # Senin Modelinin Google Drive ID'si
+            file_id = '1JZ0OmNuOIK8l4xxo5KoThcNpykMzsCtq'
+            url = f'https://drive.google.com/uc?id={file_id}'
+            
+            # İndirmeyi başlat
+            gdown.download(url, model_path, quiet=False)
+            print("✅ Model downloaded successfully.")
 
         print(f"Loading model from {model_path}...")
         
