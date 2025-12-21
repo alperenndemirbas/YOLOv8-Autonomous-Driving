@@ -1,149 +1,204 @@
 # 🚗 YOLOv8 Autonomous Driving Object Detection System
 
-This project is an **end-to-end AI microservice application** designed for object detection in autonomous driving scenarios.  
-It follows a **modern, decoupled client–server architecture**, featuring a **FastAPI backend** that serves a custom-trained **YOLOv8** model and a **Streamlit frontend** for interactive testing and visualization.
+![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)
+![TensorFlow Lite](https://img.shields.io/badge/TFLite-Edge_AI-FF6F00?logo=tensorflow&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-Frontend-FF4B4B?logo=streamlit&logoColor=white)
+
+---
+
+## 🎮 Live Demo
+Try the application live:  
+**[👉 Click Here to Open App](https://yolov8-autonomous-driving.onrender.com)**
+
+> **Note:** The server runs on a Render Free Tier. Please wait **~1 minute** for the instance to wake up if it is currently inactive.
 
 ---
 
 ## 📋 Overview
+This project is an **end-to-end AI microservice application** optimized for real-time object detection in autonomous driving scenarios.
 
-- **Model:** YOLOv8 (Medium backbone, pre-trained on COCO and fine-tuned on a Self-Driving Cars dataset)
-- **Architecture:** Microservice-based (Client–Server)
-- **Backend:** FastAPI for image processing and model inference
-- **Frontend:** Streamlit for user interaction and visualization
-- **Input:** Images and dashcam videos (up to 1920×1080)
-- **Preprocessing:** Letterbox resizing with padding to preserve aspect ratio without distortion
+The system has been re-engineered from a heavy **Keras-based architecture** to a lightweight and high-performance **TFLite (TensorFlow Lite)** inference engine. The model is served via a **FastAPI** backend and containerized with **Docker** for scalable deployment, featuring a **Streamlit** frontend for interactive testing.
+
+---
+
+## ⚡ Key Features
+- **Optimized Inference (TFLite):** Switched from heavy Keras models to **TFLite (Float32)**, significantly reducing RAM usage and latency.
+- **Microservice Architecture:** Decoupled architecture with a FastAPI backend and Streamlit frontend communicating via HTTP.
+- **Orchestrated Deployment:** Uses a custom `start.sh` script to manage multi-process (API + Frontend) execution within a single Docker container.
+- **Auto-Model Fetching:** Model weights are automatically downloaded from the cloud upon the first run.
+- **Robust Preprocessing:** Custom Letterbox resizing and coordinate recovery logic ensures high precision mapping.
 
 ---
 
 ## 🏗 Project Structure
 
-yolo-project/
+```text
+YOLOv8-Autonomous-Driving/
 │
-├── app/ # Core modules
-│ ├── inference.py # Model loading and prediction logic
-│ └── utils.py # Image preprocessing and visualization utilities
+├── app/                        # Application Core
+│   ├── inference.py            # TFLite wrapper & custom inference logic
+│   └── utils.py                # Preprocessing (Letterbox) & Visualization
 │
-├── models/ # Trained AI models
-│ └── yolov8_model_manuel_kayit.keras
-│
-├── api.py # FastAPI server (Backend)
-├── streamlit_app.py # Streamlit client (Frontend)
-├── requirements.txt # Project dependencies
-└── README.md # Documentation
+├── api.py                      # FastAPI Backend (Server)
+├── streamlit_app.py            # Streamlit Frontend (Client)
+├── start.sh                    # Entrypoint script for orchestration
+├── yolov8_high_acc.tflite      # Optimized Model (Auto-downloaded)
+├── Dockerfile                  # Container configuration
+├── requirements.txt            # Dependencies
+└── README.md                   # Documentation
+```
+🧠 Model & Dataset
 
----
+The model is based on the YOLOv8 architecture, fine-tuned on a Self-Driving Cars Dataset.
 
-## 📥 Pre-trained Model
+- Format: .tflite (TensorFlow Lite Float32)
 
-Due to GitHub file size limitations, the trained model is hosted on **Google Drive**.
+- Input Shape: (1, 640, 640, 3)
 
-👉 **Download YOLOv8 Final Model (.keras)**  
-*(https://drive.google.com/file/d/1JZ0OmNuOIK8l4xxo5KoThcNpykMzsCtq/view?usp=drive_link)*
+Detected Classes
 
-After downloading, place the file inside the following directory:
+🟢 Car
 
-models/yolov8_model_manuel_kayit.keras
+🔵 Truck
 
----
+🔴 Pedestrian
 
-## 📂 Dataset
+🟣 Cyclist
 
-The model was trained on the **Self Driving Cars Dataset** sourced from Kaggle.
+🟠 Traffic Light
 
-- **Source:** Kaggle – Self Driving Cars Dataset  
-- **Classes:**  
-  - Car  
-  - Truck  
-  - Pedestrian  
-  - Bicyclist  
-  - Traffic Light  
+Note: The model file is hosted remotely. The application uses gdown to automatically fetch it during startup.
 
----
+🛠️ Tech Stack
+AI & Core
 
-## 📊 Performance & Analysis
+- TensorFlow (TFLite): High-performance inference
 
-⚠️ **Project Status:** Prototype / Proof of Concept
+- NumPy: Matrix operations and post-processing
 
-This project demonstrates the integration of **YOLOv8** into a modern web-based microservice architecture.  
-The model was trained for **10 epochs** due to computational limitations.
+- OpenCV: Image manipulation and drawing
 
-### ✅ Strengths
-- **Near-range detection:** Strong performance for objects within approximately 0–30 meters
-- **Production-ready architecture:** API-based design suitable for scaling and extension
+Backend & Deployment
 
-### 🚧 Limitations
-- **Class imbalance:** The model shows bias toward the *Car* class, as observed in the confusion matrix
-- **Environmental sensitivity:** Optimized for daylight conditions; performance may degrade at night or in rainy environments
+- FastAPI: High-performance async web framework
 
----
+- Docker: Containerization for consistent environments
 
-## 🛠️ Tech Stack
+- Uvicorn: ASGI server
 
-### Deep Learning
-- TensorFlow 2.16.1  
-- Keras 3.3.3  
-- KerasCV 0.9.0  
+Frontend
 
-### Backend
-- FastAPI  
-- Uvicorn  
-- Python-Multipart  
+- Streamlit: Interactive web interface for testing and demo purposes
 
-### Frontend
-- Streamlit  
-- Requests  
+🚀 How to Run
 
-### Image Processing
-- OpenCV  
-- Pillow  
-- NumPy  
+You can run this project using Docker (Recommended) or directly with Python.
 
----
+Option 1: Run with Docker (Recommended) 🐳
 
-## 🚀 How to Run Locally
+This method prevents dependency conflicts and ensures a consistent environment.
 
-Follow the steps below to run the microservice architecture on your local machine.
+Build the Image
+```
+docker build -t yolo-autonomous-app .
+```
 
-### 1️⃣ Clone the Repository
+Run the Container
+```
+docker run -p 8501:8501 yolo-autonomous-app
+```
 
-```bash
-git clone https://github.com/alperenndemirbas/YOLOv8-Autonomous-Driving
+(Note: The container runs both FastAPI (Internal 8000) and Streamlit (Exposed 8501))
+Access the App 👉 http://localhost:8501
+
+Option 2: Run Locally (Python) 🐍
+
+Clone the Repository
+```
+git clone [https://github.com/alperenndemirbas/YOLOv8-Autonomous-Driving](https://github.com/alperenndemirbas/YOLOv8-Autonomous-Driving)
 cd YOLOv8-Autonomous-Driving
 ```
-2️⃣ Environment Setup (Recommended)
-```bash
-conda create -n yolo_env python=3.10 -y
-conda activate yolo_env
-```
 
-3️⃣ Install Dependencies
-```bash
+Install Dependencies
+```
 pip install -r requirements.txt
 ```
 
-4️⃣ Set Up the Model
-
-Download the pre-trained model and ensure the directory structure is as follows:
-```bash
-models/yolov8_model_manuel_kayit.keras
+Start the Backend
 ```
-5️⃣ Run the Backend (API)
-
-Start the FastAPI server (this loads the model into memory):
-```bash
 uvicorn api:app --reload
 ```
 
-The API will be available at:
-👉 http://127.0.0.1:8000
+Wait for the log: ✅ Model ready...
 
-6️⃣ Run the Frontend (UI)
-
-In a second terminal, start the Streamlit application:
-```bash
+Start the Frontend (in a new terminal)
+```
 streamlit run streamlit_app.py
 ```
 
-The UI will open automatically at:
-👉 http://localhost:8501
+📡 API Usage
+The backend exposes a REST API for prediction.
+
+POST /predict
+
+- Input: Multipart/form-data (Image file: jpg, png)
+
+- Output: JSON Object
+
+Example Response
+```
+{
+  "filename": "highway.jpg",
+  "detections": [
+    {
+      "box": [450, 320, 580, 410],
+      "score": 0.92,
+      "class_id": 0,
+      "label": "car"
+    },
+    {
+      "box": [120, 200, 300, 450],
+      "score": 0.88,
+      "class_id": 1,
+      "label": "truck"
+    }
+  ]
+}
+```
+
+🔍 Technical Analysis & Future Work
+📊 Performance Analysis
+
+- Status: Prototype / Proof of Concept.
+
+- Current Success: Excellent detection of vehicles in daylight conditions.
+
+- Optimization Gains: Switching to TFLite reduced container size and memory usage by approximately 60%, enabling deployment on free-tier cloud   instances.
+
+📉 Confusion Matrix (CM) Analysis
+
+The Confusion Matrix shows high accuracy for the Car class, while Pedestrian, Cyclist, and Traffic Light exhibit relatively lower performance.
+
+Root Cause:
+Class imbalance in the dataset, where the Car class is overrepresented.
+
+📈 Future Improvements
+- Data Augmentation: Increasing samples for underrepresented classes (Pedestrians/Cyclists).
+
+- Scenario Diversity: Adding rain, fog, and night-time datasets.
+
+- Training: Increasing epochs with Early Stopping to prevent overfitting.
+
+- Model Scaling: Fine-tuning larger YOLOv8 variants (Medium/Large) for detecting small/distant objects.
+
+⚡ Impact of TFLite Conversion
+Beyond speed and memory efficiency, the TFLite conversion provided:
+
+- More stable inference on CPU-only environments.
+
+- Faster cold-start times on serverless platforms.
+
+📌 Conclusion
+This project presents a lightweight, scalable, and real-time object detection system for autonomous driving scenarios. Transitioning from a heavy Keras architecture to an optimized TFLite microservice demonstrates a practical and efficient approach to deploying AI on edge devices and cloud platforms.

@@ -9,22 +9,32 @@ __pycache__
 *.pyd
 
 # --- Virtual Environments ---
-# Crucial: Do not copy local venv to container
+# Exclude local virtual environments to ensure a clean Docker build
 venv/
 env/
 .venv/
 
+# --- Archives & Backups ---
+# Prevent large backup files from increasing build context size
+*.tar
+*.zip
+*.rar
+
 # --- Large Model Files ---
-# Exclude models to keep image size small (Mount them as volumes instead)
+# Exclude heavy training checkpoints (Keras/PyTorch)
 models/*.keras
 models/*.pt
 *.h5
 
-# --- IDE Settings ---
+# Note: We intentionally do NOT exclude *.tflite files.
+# The optimized TFLite model is small enough to be included in the image.
+
+# --- IDE & OS Settings ---
 .DS_Store
 .vscode
 .idea
 
 # --- Documentation & Configs ---
+# Not required inside the running container
 Dockerfile
 README.md

@@ -6,7 +6,7 @@ __pycache__/
 *.pyd
 
 # --- Virtual Environments ---
-# Folders containing library installations
+# Virtual environment folders and environment variables
 venv/
 env/
 .env
@@ -17,26 +17,29 @@ env/
 Thumbs.db
 
 # --- IDE Settings ---
-# VS Code project settings (hidden folder)
+# Editor configuration files (VS Code, IntelliJ, etc.)
 .vscode/
 .idea/
 
 # --- Streamlit ---
-# Local configuration and secrets
+# Local Streamlit config (secrets, etc.)
 .streamlit/
 
 # --- Large Model Files ---
-# IMPORTANT: Excluding large model files to avoid GitHub 100MB limit.
-# You already have the download link in README.
+# Exclude large weights to prevent hitting GitHub's 100MB limit
 models/*.keras
 models/*.pt
 *.h5
 
+# --- Backups & Archives ---
+# Exclude Docker exports and compressed archives
+*.tar
+*.zip
+*.rar
+
 # --- Installers & Binary Files ---
-# Excluding the Miniconda installer seen in your project folder
 Miniconda3*
 *.exe
-*.sh
 
-# --- Jupyter Notebook Checkpoints ---
+# --- Jupyter Notebooks ---
 .ipynb_checkpoints

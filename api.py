@@ -1,108 +1,94 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 import numpy as np
-import cv2
 from PIL import Image
 import io
 
-# --- LOCAL MODULE IMPORTS ---
+# --- Local Modules ---
 from app.inference import YoloModel
-from app.utils import preprocess_image, CLASS_MAPPING
+from app.utils import letterbox_image, recover_coordinates, CLASS_NAMES
 
-# 1. INITIALIZE API APPLICATION
+# --- API Configuration ---
 app = FastAPI(
-    title="YOLOv8 Object Detection API",
-    description="Upload an image, and YOLO will return bounding box coordinates in JSON format.",
-    version="1.0"
+    title="Autonomous Driving YOLOv8 API",
+    description="Microservice for real-time object detection using TFLite.",
+    version="2.0"
 )
 
-# 2. LOAD MODEL GLOBALLY
-# The model is loaded once when the server starts to avoid reloading it for every request.
-MODEL_PATH = 'models/yolov8_model_manuel_kayit.keras'
+# --- Global Model Initialization ---
+# Load the model once at startup to ensure high performance.
+MODEL_PATH = "yolov8_high_acc.tflite"
 
 try:
     model_wrapper = YoloModel(MODEL_PATH)
-    print(f"Server started. Model loaded from {MODEL_PATH}")
+    print(f"✅ API Initialized. Model loaded from {MODEL_PATH}")
 except Exception as e:
-    print(f"CRITICAL ERROR: Could not load model! {e}")
-    # In a real production environment, we might want to shut down the server here.
+    print(f"❌ Critical Error: Could not load model: {e}")
 
-# --- ENDPOINTS ---
+# --- Endpoints ---
 
-@app.get("/")   
+@app.get("/")
 def root():
     """
-    Health Check Endpoint.
+    Health check endpoint to verify server status.
     """
-    return {"message": "YOLO API is running! Send a POST request to /predict to detect objects."}
+    return {"status": "OK", "message": "YOLOv8 Autonomous Driving API is running 🚀"}
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     """
     Main prediction endpoint.
-    Receives an image file, processes it through the YOLO model,
-    and returns detected objects with their coordinates and confidence scores.
+    Handles image upload, preprocessing, inference, and coordinate mapping.
     """
     
-    # 1. Validate Input File Type
+    # 1. Validate File Type
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload an image.")
 
     try:
-        # 2. Read and Convert Image (Bytes -> PIL -> Numpy)
+        # 2. Read and Convert Image
         contents = await file.read()
         image_pil = Image.open(io.BytesIO(contents)).convert("RGB")
-        image_np = np.array(image_pil)
-        
-        # Convert RGB (PIL) to BGR (OpenCV format)
-        image_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
         # 3. Preprocessing (Letterbox Resize)
-        # Using the helper function from app.utils
-        processed_image, meta = preprocess_image(image_bgr)
+        # Resizes image to 640x640 while maintaining aspect ratio
+        processed_image, meta = letterbox_image(image_pil, target_size=(640, 640))
         
-        # 4. Prepare Input Tensor
-        # Add batch dimension: (640, 640, 3) -> (1, 640, 640, 3)
-        input_tensor = np.expand_dims(processed_image, axis=0)
+        # Prepare Input Tensor (Add batch dimension: 1, 640, 640, 3)
+        image_np = np.array(processed_image)
+        input_tensor = np.expand_dims(image_np, axis=0)
 
-        # 5. Run Inference
-        preds = model_wrapper.predict(input_tensor)
+        # 4. Inference
+        results = model_wrapper.predict(input_tensor)
 
-        # 6. Post-Processing (Format results to JSON)
-        # Extract raw data from predictions
-        boxes = preds['boxes'][0]
-        classes = preds['classes'][0]
-        confidence = preds['confidence'][0]
-        
-        # Get scaling factors to map back to original image size
-        scale = meta['scale']
-        pad_left = meta['pad_left']
-        pad_top = meta['pad_top']
+        # 5. Post-Processing
+        raw_boxes = results['boxes'][0]
+        raw_scores = results['confidence'][0]
+        raw_classes = results['classes'][0]
         
         detections = []
-        # Filter out invalid detections (where class is -1)
-        valid_indices = np.where(classes != -1)[0]
-
-        for i in valid_indices:
-            # Calculate original coordinates (Reverse Letterbox)
-            x1 = int((boxes[i][0] - pad_left) / scale)
-            y1 = int((boxes[i][1] - pad_top) / scale)
-            x2 = int((boxes[i][2] - pad_left) / scale)
-            y2 = int((boxes[i][3] - pad_top) / scale)
+        
+        for i in range(len(raw_scores)):
+            score = float(raw_scores[i])
             
-            class_id = int(classes[i])
-            score = float(confidence[i])
-            label = CLASS_MAPPING.get(class_id, "Unknown")
+            # Filter by Confidence Threshold
+            if score > 0.25:
+                raw_box = raw_boxes[i]
+                
+                # Recover original coordinates using metadata from preprocessing
+                final_box = recover_coordinates(raw_box, meta)
+                
+                class_id = int(raw_classes[i])
+                label = CLASS_NAMES.get(class_id, "Unknown")
+                
+                detections.append({
+                    "box": final_box,      # Format: [x1, y1, x2, y2]
+                    "score": score,
+                    "class_id": class_id,
+                    "label": label
+                })
 
-            # Append to result list
-            detections.append({
-                "class": label,
-                "confidence": round(score, 2),
-                "box": [x1, y1, x2, y2]  # Format: [x_min, y_min, x_max, y_max]
-            })
-
-        # 7. Return JSON Response
+        # Return structured JSON response
         return {"filename": file.filename, "detections": detections}
 
     except Exception as e:
-        # Handle unexpected server errors
         return {"error": str(e)}

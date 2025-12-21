@@ -1,18 +1,24 @@
-# --- Backend (API & Server) ---
+# --- Frontend ---
+streamlit
+
+# --- Backend API ---
 fastapi
 uvicorn
 python-multipart
 
-# --- Frontend (UI & Communication) ---
-streamlit
-requests
-
-# --- AI & Data Processing ---
-numpy
-opencv-python
+# --- Image & Data Processing ---
+# Pinned to <2.0 due to TFLite compatibility
+numpy<2
 pillow
-tensorflow==2.16.1
-keras==3.3.3
-keras-cv==0.9.0
+opencv-python-headless
 
+# --- Inference Engine (Conditional Installation) ---
+# Use lightweight runtime for production (Linux/Docker)
+tflite-runtime; platform_system=="Linux"
+
+# Use full TensorFlow for local development (Windows/MacOS)
+tensorflow; platform_system!="Linux"
+
+# --- Utilities ---
 gdown
+requests
