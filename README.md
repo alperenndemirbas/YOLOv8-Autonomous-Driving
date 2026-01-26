@@ -170,6 +170,20 @@ Example Response
 }
 ```
 
+📊 Training Results & Observations
+
+![Model_Result](yolo_model_result.png)
+
+The model was planned to be trained for 15 epochs, but training was manually stopped at Epoch 9 after observing stable convergence and diminishing performance gains.
+
+- Rapid loss reduction after initial epochs
+
+- Significant decrease in class loss, indicating successful learning
+
+- No strong signs of overfitting observed up to Epoch 9
+
+⚠️ Note: The model has not reached full convergence and can be further improved with additional epochs, stronger data augmentation, and better class balance.
+
 🔍 Technical Analysis & Future Work
 📊 Performance Analysis
 
@@ -191,7 +205,7 @@ Class imbalance in the dataset, where the Car class is overrepresented.
 
 - Scenario Diversity: Adding rain, fog, and night-time datasets.
 
-- Training: Increasing epochs with Early Stopping to prevent overfitting.
+- Training: Longer training with Early Stopping.
 
 - Model Scaling: Fine-tuning larger YOLOv8 variants (Medium/Large) for detecting small/distant objects.
 
