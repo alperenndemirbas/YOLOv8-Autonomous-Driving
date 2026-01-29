@@ -8,6 +8,18 @@
 
 ---
 
+![Demo](demo_traffic.gif)
+*(Demo GIF has been accelerated by 2x for better visualization.)*
+
+## 🚀 Performance & Future Improvements
+
+Currently, this project utilizes **TensorFlow Lite (CPU)** for inference to ensure maximum portability and ease of installation without complex driver dependencies.
+
+* **Current Status:** Running on a standard CPU, the system achieves approximately **3-5 FPS**.
+* **Future Roadmap:** Plans include migrating the inference pipeline to **GPU (CUDA/TensorRT)**. This transition is expected to significantly boost performance, enabling high-FPS, real-time detection capabilities.
+
+---
+
 ![Example](Example.png)
 
 ## 🎮 Live Demo
