@@ -38,3 +38,6 @@ models/*.pt
 # Not required inside the running container
 Dockerfile
 README.md
+
+**/live_app.py
+yolov8_live/*.tflite

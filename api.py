@@ -54,7 +54,7 @@ async def predict(file: UploadFile = File(...)):
         processed_image, meta = letterbox_image(image_pil, target_size=(640, 640))
         
         # Prepare Input Tensor (Add batch dimension: 1, 640, 640, 3)
-        image_np = np.array(processed_image)
+        image_np = np.array(processed_image, dtype=np.float32)
         input_tensor = np.expand_dims(image_np, axis=0)
 
         # 4. Inference
