@@ -41,3 +41,5 @@ README.md
 
 **/live_app.py
 yolov8_live/*.tflite
+yolov8_live/*.pt
+*.ipynb
