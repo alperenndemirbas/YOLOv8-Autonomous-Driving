@@ -9,14 +9,21 @@
 
 ---
 
-![Demo](demo_traffic.gif)
-> *(Video File Inference ~15 FPS — High-resolution traffic video, rendering bottleneck)*
+## 🎥 Performance Demos
 
-![Live Demo](live_camera.gif)
-> *(Live Camera Inference 30+ FPS — Real-time GPU throughput under optimal lighting)*
+### 1. High-Resolution Traffic Video (Offline File)
+![Traffic Demo](demo_traffic.gif)
+> ~15 FPS — High-resolution video, rendering & I/O bottleneck
 
-> FPS varies depending on input source, resolution, and rendering overhead.
-> Live camera tests demonstrate true low-latency GPU inference capability.
+### 2. Live Camera (Real-Time GPU Inference)
+![Live Camera Demo](live_camera.gif)
+> 30+ FPS — Real-time inference on NVIDIA GPU under optimal lighting
+
+- FPS varies depending on input source, resolution, camera exposure,
+and rendering overhead. Live camera tests demonstrate true low-latency
+GPU inference capability.
+
+---
 
 ## 📋 Overview
 This project is an **end-to-end object detection system** designed for autonomous driving scenarios.  
