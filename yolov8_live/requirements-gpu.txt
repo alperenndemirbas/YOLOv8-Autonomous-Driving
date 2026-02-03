@@ -1,0 +1,14 @@
+# --- YOLOv8 & GPU Acceleration ---
+# Automatically installs torch and torchvision with CUDA support
+ultralytics
+
+# --- Frontend & UI ---
+streamlit
+streamlit-webrtc
+av
+
+# --- Image Processing ---
+# Standard OpenCV is better for local environment debugging
+opencv-python
+pillow
+numpy

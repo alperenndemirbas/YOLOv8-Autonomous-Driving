@@ -1,7 +1,5 @@
 # --- Frontend ---
 streamlit
-streamlit-webrtc
-av
 
 # --- Backend API ---
 fastapi

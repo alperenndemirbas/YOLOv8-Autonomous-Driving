@@ -1,6 +1,7 @@
 # 🚗 YOLOv8 Autonomous Driving Object Detection System
 
 ![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-GPU_Accelerated-EE4C2C?logo=pytorch&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)
 ![TensorFlow Lite](https://img.shields.io/badge/TFLite-Edge_AI-FF6F00?logo=tensorflow&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)
@@ -9,43 +10,75 @@
 ---
 
 ![Demo](demo_traffic.gif)
-> *(Note: The demo GIF is accelerated 2x for better visualization. Real-time inference on CPU is ~5 FPS.)*
+> *(Real-Time Camera Analytics ~15 FPS on native NVIDIA GPUs)*
 
-## 🚀 Performance & System Status
+## 📋 Overview
+This project is an **end-to-end object detection system** designed for autonomous driving scenarios.  
+It follows a **hybrid deployment strategy**, allowing the same solution to run efficiently on both **cloud CPU environments** and **local GPU-powered edge devices**.
 
-This project is engineered for **portability and ease of deployment**, utilizing **TensorFlow Lite (CPU)** for inference. This eliminates complex GPU driver dependencies, making it runnable on any standard machine.
+The system supports:
+- **Static image inference** via cloud-based microservices
+- **Real-time video & camera inference** via local GPU acceleration
 
-* **Current Performance:** ~3-5 FPS on standard CPU.
-* **Optimization:** Frame skipping algorithms are implemented in "Video Analysis Mode" to ensure smooth processing.
-* **Future Roadmap:** Migration to **GPU (CUDA/TensorRT)** is planned to achieve fully real-time, high-FPS performance.
+---
+
+## 🏗 System Architecture
+
+The project is built around a **Hybrid Architecture** with two complementary inference pipelines:
+
+- **Cloud Mode (CPU / TFLite)**  
+  Lightweight inference optimized for low-cost servers using **FastAPI + TFLite**, containerized with Docker.
+
+- **Local Mode (GPU / PyTorch)**  
+  High-performance real-time inference using **YOLOv8 + CUDA**, designed for live camera and video streams.
+
+This separation enables scalability from free-tier cloud deployments to high-performance edge systems without code duplication.
+
+---
+
+## ⚡ Key Features
+- **Dual Inference Engines**
+  - **YOLOv8 (PyTorch):** Real-time GPU inference for video & camera streams
+  - **TFLite (CPU):** Optimized static image inference for cloud & edge devices
+- **Microservice-Based Design**
+  - FastAPI backend for inference APIs
+  - Streamlit frontend for visualization and interaction
+- **Robust Preprocessing Pipeline**
+  - Letterbox resizing
+  - Accurate coordinate recovery for bounding boxes
+- **Deployment Ready**
+  - Dockerized cloud environment
+  - Separate dependency management for CPU and GPU modes
 
 ---
 
 ![Example](Example.png)
 
-## 🎮 Live Demo
-Try the deployed cloud application:  
-**[👉 Click Here to Open App](https://yolov8-autonomous-driving.onrender.com)**
+## 🎮 Live Demo (Cloud – Static Image)
+Try the deployed application for **image-based object detection**:  
+**[👉 Open Live App](https://yolov8-autonomous-driving.onrender.com)**
 
-> **⚠️ Note:** The server runs on Render's Free Tier. If the app is inactive, please wait **~1 minute** for the instance to wake up.
-
----
-
-## 📋 Overview
-This project is an **end-to-end AI microservice application** designed for object detection in autonomous driving scenarios.
-
-The system has been re-engineered from a heavy **Keras-based architecture** to a lightweight **TFLite (Float32)** inference engine. It is served via a **FastAPI** backend and containerized with **Docker**, featuring a **Streamlit** frontend for interactive testing.
+> **⚠️ Note:** Render Free Tier may take ~1 minute to wake up.  
+> **⚠️ Limitation:** Real-time video inference is available only in local GPU mode.
 
 ---
 
-## ⚡ Key Features
--   **Optimized Inference (TFLite):** Converted heavy YOLO models to TFLite, reducing RAM usage and latency by ~60%.
--   **Hybrid Processing Modes:**
-    -   **Live Camera:** Real-time detection via WebRTC.
-    -   **Offline Video Analysis:** CPU-optimized processing with **Frame Skipping** for smooth playback.
--   **Microservice Architecture:** Decoupled system with FastAPI (Backend) and Streamlit (Frontend) communicating via HTTP.
--   **Orchestrated Deployment:** Custom `start.sh` script manages multi-process execution within a single Docker container.
--   **Robust Preprocessing:** Custom Letterbox resizing and coordinate recovery logic ensures high-precision bounding boxes.
+## 🧠 Model & Dataset
+
+Both the PyTorch (.pt) and TFLite models were fine-tuned from pre-trained YOLOv8 weights on the same dataset. The system uses models derived from the same training pipeline and deployed in two formats:
+
+- **Local Model:** `best.pt`  
+  YOLOv8 Nano (PyTorch) – optimized for high FPS and accuracy on NVIDIA GPUs
+
+- **Cloud Model:** `yolov8_high_acc.tflite`  
+  Float32 TFLite model – optimized for CPU and edge inference
+
+**Detected Classes:**  
+Car | Truck | Pedestrian | Cyclist | Traffic Light
+
+**Dataset:**  
+Self-Driving Cars Dataset (Kaggle)  
+https://www.kaggle.com/datasets/alincijov/self-driving-cars
 
 ---
 
@@ -54,175 +87,93 @@ The system has been re-engineered from a heavy **Keras-based architecture** to a
 ```text
 YOLOv8-Autonomous-Driving/
 │
-├── app/                                    # Application Core (Shared Logic)
-│   ├── inference.py                        # TFLite wrapper & inference engine
-│   └── utils.py                            # Preprocessing (Letterbox) & Visualization
+├── app/                         # Shared application logic
+│   ├── inference.py             # TFLite inference engine
+│   └── utils.py                 # Preprocessing & visualization
 │
-├── yolov8_live/                            # Live & Video Analysis Module
-│   └── live_app.py                         # Hybrid App (Video File Analysis & WebRTC) -> RECOMMENDED FOR DEMO
+├── yolov8_live/                 # Local GPU inference module
+│   ├── live_app.py              # Real-time video & camera app
+│   ├── best.pt                  # Trained YOLOv8 model
+│   ├── PyTorch_train_model.ipynb
+│   └── requirements-gpu.txt
 │
-├── api.py                                  # FastAPI Backend (Server)
-├── streamlit_app.py                        # Streamlit Frontend (Client - API mode)
-├── convert_model.py                        # Script to convert heavy .keras models to optimized .tflite format
-├── YOLOv8_Autonomous_Driving_Training.ipynb # Jupyter Notebook for training & fine-tuning the YOLOv8 model
-├── start.sh                                # Entrypoint script for Docker orchestration
-├── yolov8_high_acc.tflite                  # Optimized Model (Auto-downloaded)
-├── Dockerfile                              # Container configuration
-├── requirements.txt                        # Python Dependencies
-└── README.md                               # Documentation
+├── api.py                       # FastAPI backend
+├── streamlit_app.py             # Streamlit frontend (API mode)
+├── convert_model.py             # Keras → TFLite conversion
+├── YOLOv8_Autonomous_Driving_Training.ipynb
+├── start.sh                     # Docker entrypoint
+├── yolov8_high_acc.tflite
+├── Dockerfile
+├── requirements.txt
+└── README.md
 ```
-
----
-
-🧠 Model & Dataset
-The model is based on the YOLOv8 architecture, fine-tuned on a Self-Driving Cars Dataset.
-
-Format: .tflite (TensorFlow Lite Float32)
-
-Input Shape: (1, 640, 640, 3)
-
-Detected Classes
-🟢 Car
-
-🔵 Truck
-
-🔴 Pedestrian
-
-🟣 Cyclist
-
-🟠 Traffic Light
-
-Note: The model file is hosted remotely. The application uses gdown to automatically fetch it during startup.
-
----
-
-🛠️ Tech Stack
-AI & Core
-
-- TensorFlow (TFLite): High-performance inference
-
-- NumPy: Matrix operations and post-processing
-
-- OpenCV: Image manipulation and drawing
-
-Backend & Deployment
-
-- FastAPI: High-performance async web framework
-
-- Docker: Containerization for consistent environments
-
-- Uvicorn: ASGI server
-
-Frontend
-
-- Streamlit: Interactive web interface for testing and demo purposes
 
 ---
 
 🚀 How to Run
-You can run this project using Docker (Recommended for API mode) or directly with Python (Recommended for Video Analysis).
+Option 1: Local GPU Mode (Recommended for Video)
 
-Option 1: Run Locally (Python) - Recommended for Video Analysis 🐍
-To use the Video File Analysis mode (as seen in the GIF):
+Requires an NVIDIA GPU with CUDA support.
 ```
-# 1. Clone the Repository
 git clone https://github.com/alperenndemirbas/YOLOv8-Autonomous-Driving
 cd YOLOv8-Autonomous-Driving
-
-# 2. Install Dependencies
-pip install -r requirements.txt
-
-# 3. Run the Hybrid App
-streamlit run live_app.py
+pip install -r yolov8_live/requirements-gpu.txt
+streamlit run yolov8_live/live_app.py
 ```
-Select "Video Dosyası (Offline)" from the sidebar to test video analysis.
+Select Live Camera or Video File from the sidebar.
 
-Option 2: Run with Docker (Microservice Mode) 🐳
-This method runs the full API + Frontend architecture as deployed on Render.
+Option 2: Cloud / Docker Mode (CPU Only)
 ```
-# Build the Image
 docker build -t yolo-autonomous-app .
-
-# Run the Container
 docker run -p 8501:8501 yolo-autonomous-app
 ```
-(Note: The container runs both FastAPI (Internal 8000) and Streamlit (Exposed 8501)) Access the App: http://localhost:8501
+Access: http://localhost:8501
 
 ---
 
-📡 API Usage
-The backend exposes a REST API for prediction.
+📉 Training Summary
 
-POST /predict
+- Model: YOLOv8 Nano
 
-- Input: Multipart/form-data (Image file: jpg, png)
+- Epochs: 15
 
-- Output: JSON Object
+- Training Environment: Google Colab (GPU)
 
-Example Response:
-```
-{
-  "filename": "highway.jpg",
-  "detections": [
-    {
-      "box": [450, 320, 580, 410],
-      "score": 0.92,
-      "class_id": 0,
-      "label": "car"
-    }
-  ]
-}
-```
+- Result: Rapid convergence with high confidence scores for vehicle classes
 
----
-
-📊 Training Results & Observations
-The model was planned to be trained for 15 epochs, but training was manually stopped at Epoch 9 after observing stable convergence and diminishing performance gains.
-
-- Rapid loss reduction after initial epochs.
-
-- Significant decrease in class loss, indicating successful learning.
-
-- No strong signs of overfitting observed up to Epoch 9.
-
-⚠️ Note: The model has not reached full convergence and can be further improved with additional epochs, stronger data augmentation, and better class balance.
+The model can be further improved with stronger data augmentation and improved class balance for minority classes.
 
 ![Model_Result](yolo_model_result.png)
 
 ---
 
-🔍 Technical Analysis & Future Work
-📊 Performance Analysis
-- Status: Prototype / Proof of Concept.
+📊 Confusion Matrix Analysis
 
-- Current Success: Excellent detection of vehicles in daylight conditions.
+The Confusion Matrix indicates:
 
-- Optimization Gains: Switching to TFLite reduced container size and memory usage by approximately 60%, enabling deployment on free-tier cloud instances.
+- High accuracy for Car detection
 
-📉 Confusion Matrix (CM) Analysis
-The Confusion Matrix shows high accuracy for the Car class, while Pedestrian, Cyclist, and Traffic Light exhibit relatively lower performance.
+- Lower performance for Pedestrian, Cyclist, and Traffic Light
 
-- Root Cause: Class imbalance in the dataset, where the Car class is overrepresented.
+Root Cause: Class imbalance in the dataset.
 
 ![Confusion](confusion_matrix.png)
 
-📈 Future Improvements
-- Data Augmentation: Increasing samples for underrepresented classes (Pedestrians/Cyclists).
+---
 
-- Scenario Diversity: Adding rain, fog, and night-time datasets.
+🔧 Design Decisions
 
-- Training: Longer training with Early Stopping.
+- YOLOv8 Nano: Chosen for its balance between speed and accuracy, suitable for real-time systems.
 
-- Model Scaling: Fine-tuning larger YOLOv8 variants (Medium/Large) for detecting small/distant objects.
+- TFLite for Cloud: Enables deployment on low-resource servers and edge devices.
 
-⚡ Impact of TFLite Conversion
-Beyond speed and memory efficiency, the TFLite conversion provided:
+- Hybrid Architecture: Separates real-time and static workloads to maximize performance and scalability.
 
-- More stable inference on CPU-only environments.
-
-- Faster cold-start times on serverless platforms.
+- Streamlit + FastAPI: Rapid prototyping with clear frontend-backend separation.
 
 ---
 
 📌 Conclusion
-This project presents a lightweight, scalable, and real-time object detection system for autonomous driving scenarios. Transitioning from a heavy Keras architecture to an optimized TFLite microservice demonstrates a practical and efficient approach to deploying AI on edge devices and cloud platforms.
+
+This project demonstrates a scalable object detection system capable of running across cloud and edge environments.
+By combining GPU-accelerated real-time inference with CPU-optimized cloud deployment, it provides a flexible foundation for autonomous driving and intelligent transportation systems.
