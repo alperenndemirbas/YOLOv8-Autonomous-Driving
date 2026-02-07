@@ -123,7 +123,7 @@ YOLOv8-Autonomous-Driving/
 
 ---
 
-🚀 How to Run
+## 🚀 How to Run
 Option 1: Local GPU Mode (Recommended for Video)
 
 Requires an NVIDIA GPU with CUDA support.
@@ -144,7 +144,7 @@ Access: http://localhost:8501
 
 ---
 
-📉 Training Summary
+## 📉 Training Summary
 
 - Model: YOLOv8 Nano
 
@@ -160,7 +160,7 @@ The model can be further improved with stronger data augmentation and improved c
 
 ---
 
-📊 Confusion Matrix Analysis
+## 📊 Confusion Matrix Analysis
 
 The Confusion Matrix indicates:
 
@@ -174,7 +174,7 @@ Root Cause: Class imbalance in the dataset.
 
 ---
 
-🔧 Design Decisions
+## 🔧 Design Decisions
 
 - YOLOv8 Nano: Chosen for its balance between speed and accuracy, suitable for real-time systems.
 
@@ -186,7 +186,13 @@ Root Cause: Class imbalance in the dataset.
 
 ---
 
-📌 Conclusion
+## 🚀 Future Improvements
+- **TensorRT Optimization:** Planning to convert YOLOv8 models to TensorRT for lower latency on NVIDIA Jetson hardware.
+- **Object Tracking:** Integrating ByteTrack for persistent ID tracking in video streams.
+
+---
+
+## 📌 Conclusion
 
 This project demonstrates a scalable object detection system capable of running across cloud and edge environments.
 By combining GPU-accelerated real-time inference with CPU-optimized cloud deployment, it provides a flexible foundation for autonomous driving and intelligent transportation systems.
