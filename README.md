@@ -196,3 +196,16 @@ Root Cause: Class imbalance in the dataset.
 
 This project demonstrates a scalable object detection system capable of running across cloud and edge environments.
 By combining GPU-accelerated real-time inference with CPU-optimized cloud deployment, it provides a flexible foundation for autonomous driving and intelligent transportation systems.
+
+---
+
+### 🧪 Proposed System Architecture (Scalable Perception Pipeline)
+
+The current system detects vehicles in traffic videos, but it can be extended into a scalable perception pipeline for autonomous and aerial surveillance:
+
+* **Edge-Level Fast Detection (YOLOv8):** Real-time detection on edge devices (e.g., UAV hardware) identifies targets with bounding boxes at high FPS.
+* **Bandwidth Optimization (Smart Cropping):** Only detected regions are sent to the ground control station/server, reducing bandwidth usage without losing critical information.
+* **Deep Feature Extraction (ViT / CNN):** Cropped images are processed by powerful models to extract semantic feature vectors for advanced analysis.
+* **Advanced Classification & Anomaly Detection:** Feature vectors enable fine-grained target classification (e.g., threat identification), anomaly detection, and intelligent decision-support.
+
+**🎯 Goal:** Combine fast edge detection with powerful server-side analysis to scale the system for UAV surveillance, border security, and autonomous perception.
